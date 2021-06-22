@@ -1,85 +1,108 @@
-import collections
-import json
-from collections import defaultdict
+# Intialize the empty list for appending other lists
+top_list = []
+current_list =  []
 
-# def group(rows):
-#     return {}
+# Returns the flat hierarchy from hierarchy
+def ungroup(hierachy):
+    def nested_dict_pairs_iterator(dict_obj):
+        ''' This function accepts a nested dictionary as argument
+            and iterate over all values of nested dictionaries
+        '''
+        # Iterate over all key-value pairs of dict argument
+        for key, value in dict_obj.items():
+            # Check if value is of dict type
+            if isinstance(value, dict):
+                # If value is dict then iterate over all its values
+                for pair in nested_dict_pairs_iterator(value):
+                    yield (key, *pair)
+            else:
+                # If value is not dict type then yield the value
+                yield (key, value)
+   
+    # Loop through all key-value pairs of a nested dictionary
+    for pair in nested_dict_pairs_iterator(hierachy): 
+        list1 = []
+        # Get the list
+        for i in range(len(pair)):
+            # Appending only the last element of item
+            if i == (len(pair)-1):
+                # Iterate further elements of last item
+                for j in range (i):
+                    list1.append(pair[i][j])
+                    a = tuple(list1)
+                    top_list.append(a) 
+                    # Remove the last element              
+                    list1.pop()
+                    if len(pair)==2:
+                        list1.append(pair[i][j+1])
+                        a = tuple(list1)
+                        top_list.append(a)
+            else :
+                # Appending the list till last second element  
+                list1.append(pair[i])
 
+    # Coverting list of tuple to list of list
+    new_list = [list(x) for x in top_list]
+    # Get the final list
+    return new_list
 
-# def ungroup(hierarchy):
-#     return []
+# Returns the hierachy from flat hierarchy
+def group(flat_hierarchy):
+    for item in flat_hierarchy:
+        new_dict = current = {}
+        for name in item[::]:
+            current[name] = {}
+            current = current[name]
+        current_list.append(new_dict)
 
+    # Create the new list using list concatenation
+    for i in range(len(current_list)-1):
+        a = current_list[i]
+        b = current_list[i+1]
+        def merge(a , b, path=None):
+        #"merges b into a"
+            if path is None: path = []
+            for key in b:
+                if key in a:
+                    if isinstance(a[key], dict) and isinstance(b[key], dict):
+                        merge(a[key], b[key], path + [str(key)])
+                    elif a[key] == b[key]:
+                        pass # same leaf value
+                    else:
+                        raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
+                else:
+                    a[key] = b[key]
+            return a
 
-lst = [["one", "two", "three", "four"], [
-    "one", "two", "three", "five"], [1, 2, 3, 4], [1, 2, 3, 6]]
+        # merge the two identical dictionay if the key's are same
+        merge_dict = merge(a, b)
+        # Update the list with the merhe result
+        current_list[i+1] = merge_dict
+    # Get the final merge dictionary
+    old_dict = merge_dict
+    # Get the values in a list of the merge dictionary
+    for key, val in old_dict.items():
+        for key2, val2 in val.items():
+            for key3, val3 in val2.items():
+                if len(val3) != 1 :
+                    dict_keys  = val3.keys()
+                    final_list = list(dict_keys)
+                    old_dict[key][key2][key3] = final_list
 
+                else : 
+                    for key4, val4 in val3.items():
+                            dict_keys  = val4.keys()
+                            final_list = list(dict_keys)
+                            old_dict[key][key2][key3][key4] = final_list
 
-def group(rows):
+            if final_list ==[] :
+                dict_keys = val2.keys()
+                final_list = list(dict_keys)
+                old_dict[key][key2] = final_list
 
-    tree = {}
-    result = {}
-    for item in rows:
-        # last_2nd_ele = item[len(item) - 2]
-        # last_element = item[len(item) - 1]
-        currTree = tree
-        for key in item[::]:
-            if key not in currTree:
-            
-                currTree[key] = {}
-                currTree = currTree[key]
-            print(tree, "tree :")
-    # print(result, "result")
-
-
-group(lst)
-
-  # print("result", result1)
-    # breakpoint()
-    # res = {}
-    # d1 = [tree]
-    # print(d1, "etg")
-    # breakpoint()
-    # for dict in d1:
-    #     for list in dict:
-    #         if list in res:
-    #             res[list] += (dict[list])
-    #         else:
-    #             res[list] = dict[list]
-    # print("new tree", tree)
-    # dictA = tree
-    # result = {}
-    # final_op = {}
-    # for k, v in dictA.items():
-    #     for nk, nv in v.items():
-    #         if result.__contains__(nk):
-    #             i = 0
-    #             while i < len(result[nk]):
-    #                 result[nk][i] += nv[i]
-    #                 i += 1
-    #         else:
-    #             result[nk] = nv
-    # final_op = result
-    # print(final_op)
-
-        # for i in range(len(rows)-1):
-                #     print(rows[i])
-                #     if item == rows[i+1]:
-                #         result = defaultdict(list)
-                #         result = tree
-                #         for k, v in currTree.items():
-                #             for k1, v1, in v.items():
-                #                 print(v, "v")
-                #                 print(k1, "k1")
-                #                 print(v1, "v1")
-                #                 if key == k1:
-                # result.setdefault(k1, []).append(v1)
-                # print("888888888")
-                # result[k1].append(v1)
-                # result[k1].append(v1)
-                # if key, currTree[i] not in currTree:
-                #     print(i, "jh")
-                # if key == last_2nd_ele:
-                    # currTree[key] = [last_element]
-                    # pass
-            # else:
-            #     if key != last_element:
+        if len(val) == 2 and val2 =={}:
+            dict_keys = val.keys()
+            final_list = list(dict_keys)
+            old_dict[key] = final_list
+    # Get the final dictionary
+    return old_dict
